@@ -67,14 +67,13 @@
         /* --- 方向鍵 (D-Pad) 樣式 --- */
         #dpad-container {
             display: grid;
-            /* 使用 Grid 創建 3x3 佈局，中間為空 */
             grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(3, 1fr);
-            width: 150px; /* 控制 D-Pad 總寬度 */
-            height: 150px; /* 控制 D-Pad 總高度 */
+            width: 150px; 
+            height: 150px; 
             margin: 15px auto 0;
-            user-select: none; /* 防止選中文字 */
-            -webkit-user-select: none; /* 兼容 Safari */
+            user-select: none; 
+            -webkit-user-select: none; 
         }
 
         .dpad-button {
@@ -148,6 +147,13 @@
             background-color: transparent; 
             cursor: pointer;
         }
+        
+        /* 移除或簡化 revive-info 樣式 */
+        .revive-info {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
         /* --- CSS 內容結束 --- */
     </style>
 </head>
@@ -203,13 +209,14 @@
     <div id="gameOverScreen" class="screen">
         <h2 id="gameOverMessage">貪吃蛇遊戲 - 結束！</h2>
         <p>你的分數是：<span id="finalScore">0</span></p>
+        <p class="revive-info">你可以選擇復活繼續遊戲，或直接重新開始。</p>
         <button id="reviveButton">復活</button>
         <button id="restartButton">回到首頁</button> 
         <p>若沒有復活，<span id="countdown">5</span> 秒後自動回到首頁...</p>
     </div>
 
     <script>
-        // --- JavaScript 內容開始 (修正復活後地形問題) ---
+        // --- JavaScript 內容開始 (確保懲罰只在點擊復活時彈出) ---
 
         // --- 元素選擇器 ---
         const startScreen = document.getElementById('startScreen');
@@ -251,7 +258,7 @@
         let gameIntervalId;
         let countdownIntervalId;
         let isMoving = false; 
-
+        
         // --- 難度設定 ---
         const difficultySettings = {
             easy: { speed: 180, label: '易 (慢)', obstacleCount: 0, maxFoods: 5 },        
@@ -289,13 +296,12 @@
             
             if (screen === startScreen) {
                 loadSessionScore();
-                // 恢復初始 Canvas 尺寸
                 canvas.width = INITIAL_CANVAS_SIZE;
                 canvas.height = INITIAL_CANVAS_SIZE;
                 gameContainer.style.width = INITIAL_CANVAS_SIZE + 'px';
                 gameContainer.style.height = INITIAL_CANVAS_SIZE + 'px';
             } else if (screen === gameScreen) {
-                adjustCanvasSize(); // 進入遊戲時調整尺寸
+                adjustCanvasSize(); 
             } else {
                 scoreRecordContainer.style.display = 'none';
             }
@@ -382,7 +388,7 @@
                 { x: 1, y: 1 }
             ];
             direction = { x: 1, y: 0 }; 
-            score = 0;
+            score = 0; 
             foods = []; 
             scoreDisplay.textContent = score;
             isMoving = false; 
@@ -390,7 +396,7 @@
             ctx.fillStyle = '#eee';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            generateObstacles(); // 生成新的障礙物
+            generateObstacles(); 
             generateFoods(); 
             draw();
         }
@@ -533,25 +539,49 @@
             startGame();
         });
 
-        // 2. 復活按鈕 (修正點：重新生成障礙物)
+        // 2. 復活按鈕 (修正點：所有懲罰提示集中在彈出框)
         reviveButton.addEventListener('click', () => {
             if (countdownIntervalId) clearInterval(countdownIntervalId);
             
-            // 重設蛇的位置 (假設蛇變短了)
-            snake = [
-                { x: 3, y: 1 },
-                { x: 2, y: 1 },
-                { x: 1, y: 1 }
-            ];
-            direction = { x: 1, y: 0 }; 
-            
-            // *** 關鍵修正：重新生成障礙物和食物 ***
-            generateObstacles(); 
-            foods = [];
-            generateFoods();
+            // *** 關鍵修正：計算懲罰並集中在彈出框中顯示 ***
+            const penalty = Math.floor(score / 2);
+            const confirmed = confirm(`確定要復活嗎？分數將會扣除當前的一半 (扣除 ${penalty} 分)！`);
 
-            showScreen(gameScreen);
-            gameIntervalId = setInterval(updateGame, gameSpeed);
+            if (confirmed) {
+                // 執行復活邏輯
+                
+                // 扣除懲罰分數並確保不低於零
+                score = Math.max(0, score - penalty);
+                scoreDisplay.textContent = score; 
+
+                // 重設蛇的位置 (讓它變短並從頭開始)
+                snake = [
+                    { x: 3, y: 1 },
+                    { x: 2, y: 1 },
+                    { x: 1, y: 1 }
+                ];
+                direction = { x: 1, y: 0 }; 
+                
+                // 重新生成障礙物和食物
+                generateObstacles(); 
+                foods = [];
+                generateFoods();
+
+                showScreen(gameScreen);
+                gameIntervalId = setInterval(updateGame, gameSpeed);
+            } else {
+                // 如果取消復活，則重新開始倒計時
+                let countdownTime = 5;
+                countdownDisplay.textContent = countdownTime;
+                countdownIntervalId = setInterval(() => {
+                    countdownTime--;
+                    countdownDisplay.textContent = countdownTime;
+                    if (countdownTime <= 0) {
+                        clearInterval(countdownIntervalId);
+                        showScreen(startScreen); 
+                    }
+                }, 1000);
+            }
         });
         
         // 3. 重新開始按鈕
