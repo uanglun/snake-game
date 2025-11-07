@@ -5,7 +5,7 @@
     <title>貪吃蛇遊戲</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        /* --- CSS 內容開始 (包含手機格式調整) --- */
+        /* --- CSS 內容開始 (包含手機格式調整與方向鍵) --- */
         body {
             font-family: Arial, sans-serif;
             display: flex;
@@ -14,49 +14,33 @@
             min-height: 100vh;
             margin: 0;
             background-color: #f4f4f4;
-            /* 防止瀏覽器在觸控時拉伸或縮放頁面 */
             touch-action: none; 
         }
 
         .screen {
             background-color: white;
-            padding: 20px; /* 手機上減少 padding */
+            padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             text-align: center;
             display: none; 
-            width: 90%; /* 響應式寬度 */
+            width: 90%; 
             max-width: 460px; /* 限制最大寬度 */
         }
 
         .screen.active {
             display: block; 
         }
-
-        /* 開發者資訊樣式 */
-        .developer-info {
-            font-size: 12px;
-            color: #666;
-            margin-top: -10px;
-            margin-bottom: 20px;
-        }
-
+        
         /* 遊戲畫布容器 */
         #gameContainer {
             position: relative;
-            /* 初始尺寸與 Canvas 相同 */
             width: 400px; 
             height: 400px; 
-            margin: 0 auto;
-        }
-
-        #gameCanvas {
-            border: 5px solid #333;
-            background-color: #eee;
-            display: block;
+            margin: 0 auto 15px; /* 下方留出空間給方向鍵 */
         }
         
-        /* 響應式調整：確保容器在小螢幕上可以填滿 */
+        /* 響應式調整：確保容器在小螢幕上可以縮放 */
         @media screen and (max-width: 480px) {
             #gameContainer {
                 width: calc(100vw - 40px); 
@@ -66,26 +50,76 @@
             }
         }
 
+        #gameCanvas {
+            border: 5px solid #333;
+            background-color: #eee;
+            display: block;
+        }
+
         #infoBar {
             display: flex;
             justify-content: space-between;
             padding: 10px 0;
             font-weight: bold;
-            font-size: 0.9em; /* 手機上字體小一點 */
+            font-size: 0.9em; 
         }
         
-        /* 本局成績的區塊樣式 */
-        #currentScoreRecord {
-            margin-top: 15px;
-            padding: 10px;
-            border: 1px dashed #333;
-            background-color: #ffe0b2; 
-            font-weight: bold;
-            display: none; 
+        /* --- 方向鍵 (D-Pad) 樣式 --- */
+        #dpad-container {
+            display: grid;
+            /* 使用 Grid 創建 3x3 佈局，中間為空 */
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            width: 150px; /* 控制 D-Pad 總寬度 */
+            height: 150px; /* 控制 D-Pad 總高度 */
+            margin: 15px auto 0;
+            user-select: none; /* 防止選中文字 */
+            -webkit-user-select: none; /* 兼容 Safari */
         }
 
+        .dpad-button {
+            background-color: #616161;
+            color: white;
+            border: none;
+            padding: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            transition: background-color 0.1s;
+        }
+
+        .dpad-button:active {
+            background-color: #333;
+        }
+
+        /* 佈局定位 */
+        #dpad-up {
+            grid-column: 2 / 3;
+            grid-row: 1 / 2;
+        }
+        #dpad-left {
+            grid-column: 1 / 2;
+            grid-row: 2 / 3;
+        }
+        #dpad-right {
+            grid-column: 3 / 4;
+            grid-row: 2 / 3;
+        }
+        #dpad-down {
+            grid-column: 2 / 3;
+            grid-row: 3 / 4;
+        }
+        /* 讓中間空一格 */
+        .dpad-center-filler {
+            grid-column: 2 / 3;
+            grid-row: 2 / 3;
+        }
+
+        /* 其他通用樣式保持不變 */
         button {
-            padding: 10px 15px; /* 手機上按鈕小一點 */
+            padding: 10px 15px; 
             margin: 8px;
             cursor: pointer;
             background-color: #4CAF50;
@@ -95,12 +129,15 @@
             font-size: 16px;
         }
 
-        /* 遊戲結束畫面的樣式微調 */
-        #gameOverScreen h2 {
-            color: red;
+        #currentScoreRecord {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px dashed #333;
+            background-color: #ffe0b2; 
+            font-weight: bold;
+            display: none; 
         }
-
-        /* --- 觸控疊加層樣式 --- */
+        
         #touchOverlay {
             position: absolute;
             top: 0;
@@ -153,17 +190,26 @@
             <canvas id="gameCanvas" width="400" height="400"></canvas>
             <div id="touchOverlay"></div>
         </div>
+        
+        <div id="dpad-container">
+            <button class="dpad-button" id="dpad-up">▲</button>
+            <div class="dpad-center-filler"></div>
+            <button class="dpad-button" id="dpad-left">◀</button>
+            <button class="dpad-button" id="dpad-right">▶</button>
+            <button class="dpad-button" id="dpad-down">▼</button>
+        </div>
     </div>
 
     <div id="gameOverScreen" class="screen">
         <h2 id="gameOverMessage">貪吃蛇遊戲 - 結束！</h2>
         <p>你的分數是：<span id="finalScore">0</span></p>
         <button id="reviveButton">復活</button>
-        <button id="restartButton">回到首頁</button> <p>若沒有復活，<span id="countdown">5</span> 秒後自動回到首頁...</p>
+        <button id="restartButton">回到首頁</button> 
+        <p>若沒有復活，<span id="countdown">5</span> 秒後自動回到首頁...</p>
     </div>
 
     <script>
-        // --- JavaScript 內容開始 (修正輸入問題) ---
+        // --- JavaScript 內容開始 (修正復活後地形問題) ---
 
         // --- 元素選擇器 ---
         const startScreen = document.getElementById('startScreen');
@@ -171,7 +217,7 @@
         const gameOverScreen = document.getElementById('gameOverScreen');
         const startGameButton = document.getElementById('startGameButton');
         const reviveButton = document.getElementById('reviveButton');
-        const restartButton = document.getElementById('restartButton'); // 新增重新開始按鈕
+        const restartButton = document.getElementById('restartButton');
         const playerNameInput = document.getElementById('playerName');
         const difficultySelect = document.getElementById('difficulty');
         const canvas = document.getElementById('gameCanvas');
@@ -183,13 +229,19 @@
         const scoreRecordContainer = document.getElementById('currentScoreRecord');
         const gameContainer = document.getElementById('gameContainer');
         const touchOverlay = document.getElementById('touchOverlay'); 
+        
+        // D-Pad 元素
+        const dpadUp = document.getElementById('dpad-up');
+        const dpadDown = document.getElementById('dpad-down');
+        const dpadLeft = document.getElementById('dpad-left');
+        const dpadRight = document.getElementById('dpad-right');
 
 
         // --- 遊戲設定變數 ---
         let playerName = '';
         let currentDifficulty = 'medium';
         let gameSpeed = 150; 
-        const INITIAL_TILE_COUNT = 20; // 初始網格數 (20x20)
+        const INITIAL_TILE_COUNT = 20; 
         const INITIAL_CANVAS_SIZE = 400; 
         let snake = [];
         let foods = []; 
@@ -198,9 +250,9 @@
         let score = 0;
         let gameIntervalId;
         let countdownIntervalId;
-        let isMoving = false; // 確保在一個遊戲循環中只處理一次方向改變
+        let isMoving = false; 
 
-        // --- 難度設定 (速度已優化，更靈敏) ---
+        // --- 難度設定 ---
         const difficultySettings = {
             easy: { speed: 180, label: '易 (慢)', obstacleCount: 0, maxFoods: 5 },        
             medium: { speed: 130, label: '中 (標準)', obstacleCount: 8, maxFoods: 3 },     
@@ -208,14 +260,12 @@
             extreme: { speed: 50, label: '極難 (極快)', obstacleCount: 20, maxFoods: 1 }  
         };
 
-        // --- 本地儲存鍵值 ---
         const SESSION_SCORE_KEY = 'SNAKE_CURRENT_SCORE';
 
         // --- 響應式調整 Canvas 尺寸 ---
         function adjustCanvasSize() {
             if (gameScreen.classList.contains('active')) {
                 const containerWidth = gameContainer.offsetWidth;
-                
                 const newTileSize = Math.floor(containerWidth / INITIAL_TILE_COUNT);
                 const newCanvasSize = newTileSize * INITIAL_TILE_COUNT;
 
@@ -224,7 +274,6 @@
                     canvas.height = newCanvasSize;
                     gameContainer.style.width = newCanvasSize + 'px';
                     gameContainer.style.height = newCanvasSize + 'px';
-                    
                     if (gameIntervalId) draw(); 
                 }
             }
@@ -252,7 +301,7 @@
             }
         }
 
-        // --- 讀取/儲存本局成績 (SessionStorage) ---
+        // --- 讀取/儲存本局成績 ---
         function loadSessionScore() {
             const lastScore = sessionStorage.getItem(SESSION_SCORE_KEY);
             if (lastScore && !isNaN(parseInt(lastScore))) {
@@ -341,7 +390,7 @@
             ctx.fillStyle = '#eee';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            generateObstacles(); 
+            generateObstacles(); // 生成新的障礙物
             generateFoods(); 
             draw();
         }
@@ -349,27 +398,19 @@
         // --- 繪製函數 ---
         function draw() {
             const currentTileSize = canvas.width / INITIAL_TILE_COUNT; 
-
             ctx.fillStyle = '#eee';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // 1. 繪製食物
             ctx.fillStyle = 'red';
             foods.forEach(food => {
                 ctx.fillRect(food.x * currentTileSize, food.y * currentTileSize, currentTileSize, currentTileSize);
             });
-
-            // 2. 繪製障礙物
             ctx.fillStyle = '#666'; 
             obstacles.forEach(obstacle => {
                 ctx.fillRect(obstacle.x * currentTileSize, obstacle.y * currentTileSize, currentTileSize, currentTileSize);
             });
-
-            // 3. 繪製蛇 
             snake.forEach((segment, index) => {
                 ctx.fillStyle = (index === 0) ? '#006400' : 'black'; 
                 ctx.fillRect(segment.x * currentTileSize, segment.y * currentTileSize, currentTileSize, currentTileSize);
-                
                 ctx.strokeStyle = '#fff';
                 ctx.strokeRect(segment.x * currentTileSize, segment.y * currentTileSize, currentTileSize, currentTileSize);
             });
@@ -378,9 +419,7 @@
         // --- 遊戲邏輯主循環 ---
         function updateGame() {
             isMoving = true; 
-
             const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
-
             const boundaryX = INITIAL_TILE_COUNT;
             const boundaryY = INITIAL_TILE_COUNT;
 
@@ -405,7 +444,6 @@
 
             snake.unshift(head); 
             let eaten = false;
-
             const foodIndex = foods.findIndex(f => f.x === head.x && f.y === head.y);
 
             if (foodIndex !== -1) {
@@ -424,27 +462,20 @@
             isMoving = false; 
         }
 
-        // --- 啟動遊戲函數 ---
         function startGame() {
             playerName = playerNameInput.value || '匿名玩家'; 
             currentDifficulty = difficultySelect.value;
-
             document.getElementById('displayPlayerName').textContent = playerName;
             document.getElementById('displayDifficulty').textContent = difficultySettings[currentDifficulty].label;
-
             if (gameIntervalId) clearInterval(gameIntervalId);
-            
             initializeGame();
             showScreen(gameScreen);
-
             gameIntervalId = setInterval(updateGame, gameSpeed);
         }
 
-        // --- 復活/遊戲結束處理 ---
         function showGameOver(message) {
             if (gameIntervalId) clearInterval(gameIntervalId);
             if (countdownIntervalId) clearInterval(countdownIntervalId);
-
             document.getElementById('gameOverMessage').textContent = `貪吃蛇遊戲 - ${message}`; 
             finalScoreDisplay.textContent = score;
             showScreen(gameOverScreen);
@@ -463,7 +494,6 @@
 
         // 統一處理方向變更的函數
         function handleDirectionChange(key) {
-            // 遊戲未開始或正在處理前一格移動時，忽略輸入
             if (!gameScreen.classList.contains('active') || isMoving) return;
 
             let newDirection = { x: direction.x, y: direction.y };
@@ -494,7 +524,7 @@
 
         // --- 事件監聽器 ---
 
-        // 1. 開始遊戲按鈕
+        // 1. 開始按鈕
         startGameButton.addEventListener('click', () => {
             if (playerNameInput.value.trim() === '') {
                 alert('請輸入遊玩名稱！');
@@ -503,15 +533,11 @@
             startGame();
         });
 
-        // 2. 復活按鈕
+        // 2. 復活按鈕 (修正點：重新生成障礙物)
         reviveButton.addEventListener('click', () => {
             if (countdownIntervalId) clearInterval(countdownIntervalId);
             
-            if (snake.length > 3) {
-                snake.pop(); 
-                snake.pop(); 
-            }
-            
+            // 重設蛇的位置 (假設蛇變短了)
             snake = [
                 { x: 3, y: 1 },
                 { x: 2, y: 1 },
@@ -519,6 +545,8 @@
             ];
             direction = { x: 1, y: 0 }; 
             
+            // *** 關鍵修正：重新生成障礙物和食物 ***
+            generateObstacles(); 
             foods = [];
             generateFoods();
 
@@ -526,50 +554,42 @@
             gameIntervalId = setInterval(updateGame, gameSpeed);
         });
         
-        // 3. 重新開始按鈕 (新增)
+        // 3. 重新開始按鈕
         restartButton.addEventListener('click', () => {
             if (countdownIntervalId) clearInterval(countdownIntervalId);
             showScreen(startScreen);
         });
 
 
-        // 4. 鍵盤控制 (桌面端) - 修正：避免阻止輸入框的預設行為
+        // 4. 鍵盤控制 (防止輸入干擾)
         document.addEventListener('keydown', (event) => {
-            // 只有當遊戲畫面在活動狀態 *且* 焦點不在輸入框時，才處理方向鍵
             if (gameScreen.classList.contains('active')) {
                 const key = event.key.toLowerCase();
                 if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(key)) {
                     handleDirectionChange(event.key);
-                    event.preventDefault(); // 阻止頁面滾動
+                    event.preventDefault(); 
                 }
             } else if (event.target === playerNameInput) {
-                // 如果焦點在輸入框，不執行任何阻止輸入的動作
                 return; 
             } else {
-                 // 其他情況下的按鍵（例如在開始畫面按方向鍵）
                 return;
             }
         });
         
-        // 5. 觸控控制 (手機端)
+        // 5. 觸控控制 (畫布區域)
         touchOverlay.addEventListener('touchstart', (event) => {
-            event.preventDefault(); // 防止滾動
-            
+            event.preventDefault(); 
             if (gameScreen.classList.contains('active')) {
                 const rect = touchOverlay.getBoundingClientRect();
                 const touchX = event.touches[0].clientX - rect.left;
                 const touchY = event.touches[0].clientY - rect.top;
-                
                 const width = rect.width;
                 const height = rect.height;
-                
                 const centerX = width / 2;
                 const centerY = height / 2;
-                
                 const diffX = touchX - centerX;
                 const diffY = touchY - centerY;
                 
-                // 核心邏輯：判斷是橫向移動多還是縱向移動多
                 if (Math.abs(diffX) > Math.abs(diffY)) {
                     if (diffX < 0) {
                         handleDirectionChange('ArrowLeft');
@@ -586,7 +606,13 @@
             }
         });
         
-        // 6. 顯式處理輸入框的焦點（確保在點擊時鍵盤會彈出）
+        // 6. 虛擬方向鍵控制
+        dpadUp.addEventListener('click', () => handleDirectionChange('ArrowUp'));
+        dpadDown.addEventListener('click', () => handleDirectionChange('ArrowDown'));
+        dpadLeft.addEventListener('click', () => handleDirectionChange('ArrowLeft'));
+        dpadRight.addEventListener('click', () => handleDirectionChange('ArrowRight'));
+        
+        // 7. 顯式處理輸入框的焦點
         playerNameInput.addEventListener('click', () => {
             playerNameInput.focus();
         });
